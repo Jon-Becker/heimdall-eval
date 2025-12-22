@@ -1,0 +1,1 @@
+Compare these two Solidity files and evaluate how well the decompiled version captures the original's functionality. Respond with raw JSON only, no markdown formatting or code fences. Format: {"score": <0-100>, "summary": "<brief summary>", "differences": ["<difference 1>", "<difference 2>", ...]}
