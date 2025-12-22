@@ -3,6 +3,9 @@
 # Support both `make run <target>` and `make run TARGET=<target>`
 TARGET := $(if $(TARGET),$(TARGET),$(word 2,$(MAKECMDGOALS)))
 
+# Use dev build if DEV=1 is passed (e.g., make eval-all DEV=1)
+HEIMDALL := $(if $(DEV),/Users/jonathanbecker/Documents/github/heimdall-rs/target/release/heimdall,heimdall)
+
 run:
 ifeq ($(TARGET),)
 	@echo "Available targets:"
@@ -16,8 +19,8 @@ else
 		bytecode=$$(jq -r '.deployedBytecode.object // .deployedBytecode // empty' "$$json" 2>/dev/null); \
 		if [ -n "$$bytecode" ] && [ "$$bytecode" != "null" ] && [ "$$bytecode" != "0x" ]; then \
 			echo "Processing $$name..."; \
-			heimdall decompile "$$bytecode" -d -vvv -o ./heimdall/$$name --include-sol || true; \
-			heimdall cfg "$$bytecode" -d -vvv -o ./heimdall/$$name || true; \
+			$(HEIMDALL) decompile "$$bytecode" -d -vvv -o ./heimdall/$$name --include-sol || true; \
+			$(HEIMDALL) cfg "$$bytecode" -d -vvv -o ./heimdall/$$name || true; \
 		fi; \
 	done
 endif
@@ -25,14 +28,14 @@ endif
 run-all:
 	@for dir in $$(ls -d evals/*/ 2>/dev/null | xargs -n1 basename); do \
 		echo "=== Running $$dir ==="; \
-		$(MAKE) run TARGET=$$dir; \
+		$(MAKE) run TARGET=$$dir DEV=$(DEV); \
 	done
 
 eval:
 ifeq ($(TARGET),)
 	@echo "Usage: make eval <target>"
 else
-	$(MAKE) run TARGET=$(TARGET)
+	$(MAKE) run TARGET=$(TARGET) DEV=$(DEV)
 	@for sol in ./evals/$(TARGET)/src/*.sol; do \
 		name=$$(basename "$$sol" .sol); \
 		decompiled="./heimdall/$$name/decompiled.sol"; \
@@ -53,13 +56,28 @@ else
 		else \
 			echo "Skipping $$name CFG: no cfg.dot found"; \
 		fi; \
+		decompilation_score=$$(jq -r '.score // empty' "./heimdall/$$name/eval.json" 2>/dev/null); \
+		cfg_score=$$(jq -r '.score // empty' "./heimdall/$$name/cfg_eval.json" 2>/dev/null); \
+		if [ -n "$$decompilation_score" ] || [ -n "$$cfg_score" ]; then \
+			cfg_val=$${cfg_score:-null}; \
+			dec_val=$${decompilation_score:-null}; \
+			if [ -f "./heimdall/evals.json" ]; then \
+				jq --arg name "$$name" --argjson cfg "$$cfg_val" --argjson dec "$$dec_val" \
+					'. + {($$name): {cfg: $$cfg, decompilation: $$dec}}' \
+					"./heimdall/evals.json" > "./heimdall/evals.json.tmp" && mv "./heimdall/evals.json.tmp" "./heimdall/evals.json"; \
+			else \
+				jq -n --arg name "$$name" --argjson cfg "$$cfg_val" --argjson dec "$$dec_val" \
+					'{($$name): {cfg: $$cfg, decompilation: $$dec}}' > "./heimdall/evals.json"; \
+			fi; \
+		fi; \
 	done
+	@echo "Updated ./heimdall/evals.json"
 endif
 
 eval-all:
 	@for dir in $$(ls -d evals/*/ 2>/dev/null | xargs -n1 basename); do \
 		echo "=== Evaluating $$dir ==="; \
-		$(MAKE) eval TARGET=$$dir; \
+		$(MAKE) eval TARGET=$$dir DEV=$(DEV); \
 	done
 
 # Catch-all to prevent "Nothing to be done" for target arguments
