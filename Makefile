@@ -17,9 +17,9 @@ else
 		bytecode=$$(jq -r '.deployedBytecode.object // .deployedBytecode // empty' "$$json" 2>/dev/null); \
 		if [ -n "$$bytecode" ] && [ "$$bytecode" != "null" ] && [ "$$bytecode" != "0x" ]; then \
 			echo "Processing $$name..."; \
-			heimdall decompile "$$bytecode" -d -vvv -o ./heimdall/$(TARGET)/$$name --include-sol || true; \
-			heimdall decompile "$$bytecode" -d -vvv -o ./heimdall/$(TARGET)/$$name --include-yul || true; \
-			heimdall cfg "$$bytecode" -d -vvv -o ./heimdall/$(TARGET)/$$name || true; \
+			heimdall decompile "$$bytecode" -d -vvv -o ./heimdall/$$name --include-sol || true; \
+			heimdall decompile "$$bytecode" -d -vvv -o ./heimdall/$$name --include-yul || true; \
+			heimdall cfg "$$bytecode" -d -vvv -o ./heimdall/$$name || true; \
 		fi; \
 	done
 endif
