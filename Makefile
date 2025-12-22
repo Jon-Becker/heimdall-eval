@@ -1,4 +1,4 @@
-.PHONY: run run-all eval
+.PHONY: run run-all eval eval-all
 
 # Support both `make run <target>` and `make run TARGET=<target>`
 TARGET := $(if $(TARGET),$(TARGET),$(word 2,$(MAKECMDGOALS)))
@@ -40,7 +40,7 @@ else
 		if [ -f "$$decompiled" ]; then \
 			echo "=== Evaluating $$name (decompiled) ==="; \
 			prompt="$$(cat prompts/DECOMPILATION_PROMPT.md)\n\nOriginal:\n$$(cat $$sol)\n\nDecompiled:\n$$(cat $$decompiled)"; \
-			ANTHROPIC_MODEL="claude-haiku-4-5" claude --dangerously-skip-permissions --model claude-haiku-4-5 -p "$$prompt" > "./heimdall/$$name/eval.json"; \
+			ANTHROPIC_MODEL="claude-haiku-4-5" claude --dangerously-skip-permissions --model claude-haiku-4-5 -p "$$prompt" | sed 's/^```json//; s/^```//; s/```$$//' | jq . > "./heimdall/$$name/eval.json"; \
 			echo "Output written to ./heimdall/$$name/eval.json"; \
 		else \
 			echo "Skipping $$name: no decompiled output found"; \
@@ -48,13 +48,19 @@ else
 		if [ -f "$$cfg" ]; then \
 			echo "=== Evaluating $$name (CFG) ==="; \
 			prompt="$$(cat prompts/CFG_PROMPT.md)\n\nOriginal Solidity:\n$$(cat $$sol)\n\nCFG (dot format):\n$$(cat $$cfg)"; \
-			claude --dangerously-skip-permissions -p "$$prompt" > "./heimdall/$$name/cfg_eval.json"; \
+			claude --dangerously-skip-permissions -p "$$prompt" | sed 's/^```json//; s/^```//; s/```$$//' | jq . > "./heimdall/$$name/cfg_eval.json"; \
 			echo "Output written to ./heimdall/$$name/cfg_eval.json"; \
 		else \
 			echo "Skipping $$name CFG: no cfg.dot found"; \
 		fi; \
 	done
 endif
+
+eval-all:
+	@for dir in $$(ls -d evals/*/ 2>/dev/null | xargs -n1 basename); do \
+		echo "=== Evaluating $$dir ==="; \
+		$(MAKE) eval TARGET=$$dir; \
+	done
 
 # Catch-all to prevent "Nothing to be done" for target arguments
 %:
