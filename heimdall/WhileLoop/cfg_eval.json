@@ -1,19 +1,22 @@
 {
-  "score": 92,
-  "summary": "The CFG accurately represents the while loop control flow with proper loop entry, body execution, condition checking, and exit paths. The loop structure is correctly implemented with overflow protection.",
-  "missing_paths": [],
-  "extra_paths": [
-    "Overflow revert path in addition operations (compiler-generated safety checks not in source)"
+  "score": 85,
+  "summary": "CFG captures the main while loop structure with entry, loop body, and exit. The loop back-edge from the increment operation to the condition check is missing, and overflow checking path is present but missing the successful continuation after addition.",
+  "missing_paths": [
+    "Loop back-edge: After incrementing i (i = i + 1), control should return to the loop condition check (i < loops) at block 7",
+    "Successful overflow check continuation: Block 8 should have an edge to a block that stores the result and continues the loop, but this path is not shown"
   ],
+  "extra_paths": [],
   "observations": [
-    "Node 7 correctly implements the while loop condition check (i < loops) with ISZERO and conditional jump",
-    "Node 8 contains the loop body: incrementing number (SLOAD, ADD, SSTORE) and i",
-    "Node 11 is the loop exit point reached when condition fails (i >= loops)",
-    "Nodes 9 and 10 contain overflow checking for addition operations - these are Solidity 0.8+ automatic safety checks",
-    "The CFG shows proper back-edge from loop body (node 8/10) returning to condition check (node 7)",
-    "Function dispatcher correctly routes to loop() function (selector 0x0b7d796e) and number() getter (selector 0x8381f58a)",
-    "Callvalue check (node 0->1) ensures no ETH is sent to non-payable function",
-    "Parameter validation in nodes 4-6 and 12 handles malformed calldata",
-    "The while loop semantic (check-then-execute) is correctly represented in the CFG structure"
+    "Block 0-2: Contract deployment with CALLVALUE check (revert if ETH sent) - correct",
+    "Block 3: Function selector dispatch for 0x0b7d796e (loop) and 0x8381f58a (number getter) - correct",
+    "Block 4-5: Parameter decoding for loop function with input validation - correct",
+    "Block 7: Loop condition check (i < loops) with branch to block 8 (loop body) or block 10 (exit) - correct structure",
+    "Block 8: Loop body performs number + 1 with SafeMath overflow check, calls helper at 0x0166",
+    "Block 9: Overflow revert path with Panic(0x11) - arithmetic overflow error - correct",
+    "Block 10: Loop exit leading to STOP - correct",
+    "Block 8 shows the addition operation but CFG is missing the back-edge to block 7 for loop continuation",
+    "The increment of i (i = i + 1) appears to be inlined in the bytecode but the graph does not show the complete cycle back to condition",
+    "Block 13: Getter function for 'number' state variable - correct implementation",
+    "Block 14: Fallback revert for invalid function selectors - correct"
   ]
 }

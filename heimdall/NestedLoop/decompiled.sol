@@ -24,6 +24,7 @@ contract DecompiledContract {
     function loop(uint256 arg0) public view {
         require(arg0 == arg0);
         require(!0 < arg0);
+        require(!0 < arg0);
         require(!number > (number + 0x01));
         var_a = 0x4e487b7100000000000000000000000000000000000000000000000000000000;
         var_b = 0x11;

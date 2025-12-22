@@ -1,19 +1,25 @@
 {
-  "score": 92,
-  "summary": "The CFG accurately represents the SimpleLoop contract's control flow, including the for-loop structure with proper loop entry, condition check, body execution, increment, and exit paths. All expected control flow paths are present.",
-  "missing_paths": [],
-  "extra_paths": [],
+  "score": 85,
+  "summary": "The CFG captures the main control flow of the SimpleLoop contract including the for-loop structure, but has some structural differences due to EVM compilation optimizations and lacks explicit back-edge representation for the loop iteration.",
+  "missing_paths": [
+    "Explicit loop back-edge from increment (i++) back to condition check (i < loops)",
+    "Loop increment block (i++) as separate node before jumping back to condition"
+  ],
+  "extra_paths": [
+    "Overflow check path (node 9) for number++ increment - Panic(0x11) revert on arithmetic overflow",
+    "Input validation revert path (node 6) for calldata parameter validation",
+    "Generic calldata size check revert (node 11)",
+    "Fallback/invalid selector revert (node 14)"
+  ],
   "observations": [
-    "Node 0 handles contract deployment with CALLVALUE check, branching to revert (node 1) if ETH sent or continuing to function dispatcher (node 2)",
-    "Nodes 2-3 implement the function selector dispatcher, routing to loop() (0x0b7d796e) via node 4 or number() getter (0x8381f58a) via nodes 13-14",
-    "Node 15 is the fallback revert for unknown function selectors",
-    "The for-loop is correctly represented: node 7 contains the loop condition (i < loops), node 8 contains the loop body (number++ via SLOAD/SSTORE), and node 11 is the loop exit",
-    "Node 7 shows the loop condition check with ISZERO and conditional JUMPI to exit at 0xa2",
-    "Node 8 increments the storage variable and includes overflow checking (nodes 9-10 handle the overflow panic)",
-    "Node 9 contains the Panic(0x11) arithmetic overflow revert path - this is compiler-generated checked arithmetic",
-    "Node 10 represents the safe increment path when no overflow occurs, jumping back to 0x77 for the next iteration",
-    "The loop back-edge from node 10 to node 7 (via PUSH2 0x77, JUMP at 0x9e-0xa1) correctly implements the for-loop iteration",
-    "Nodes 4-6 and 12 handle parameter decoding with input validation for the loop() function",
-    "The CFG contains some duplicated instruction sequences in nodes 8 and 10 due to DOT format representation, but the logical flow is correct"
+    "The for-loop is represented with condition check at node 7 (LT, ISZERO pattern) and body at node 8",
+    "Node 7 contains the loop condition (i < loops) with ISZERO to invert for conditional jump",
+    "Node 8 contains the loop body (number++) with SLOAD/SSTORE pattern",
+    "The loop back-edge is implicit - after node 8's arithmetic operations, control returns to node 7 via the missing increment path",
+    "Node 9 represents Solidity 0.8.x's built-in overflow protection for the number++ operation",
+    "The CFG correctly shows two function selectors: 0x0b7d796e (loop) and 0x8381f58a (number getter)",
+    "Node 10 represents the loop exit path when condition (i < loops) is false",
+    "The increment operation for loop counter i is embedded within the arithmetic overflow check flow rather than shown as separate node",
+    "Contract deployment checks (CALLVALUE check) are correctly represented in nodes 0-1"
   ]
 }
