@@ -1,0 +1,10 @@
+{
+  "SimpleLoop": {
+    "cfg": 92,
+    "decompilation": 15
+  },
+  "WhileLoop": {
+    "cfg": 92,
+    "decompilation": 5
+  }
+}
