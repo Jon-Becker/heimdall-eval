@@ -77,10 +77,7 @@ else
 endif
 
 eval-all:
-	@for dir in $$(ls -d evals/*/ 2>/dev/null | xargs -n1 basename); do \
-		echo "=== Evaluating $$dir ==="; \
-		$(MAKE) eval TARGET=$$dir DEV=$(DEV); \
-	done
+	@ls -d evals/*/ 2>/dev/null | xargs -n1 basename | xargs -P 0 -I {} $(MAKE) eval TARGET={} DEV=$(DEV)
 
 # Catch-all to prevent "Nothing to be done" for target arguments
 %:
