@@ -1,5 +1,7 @@
 # heimdall-eval
 
+![splash preview](./preview.png?raw=true)
+
 Structured evaluation framework for [heimdall-rs](https://github.com/jon-becker/heimdall-rs)'s decompilation and CFG generation using Claude as an LLM judge.
 
 ## Overview
