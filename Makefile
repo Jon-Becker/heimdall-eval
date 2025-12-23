@@ -42,17 +42,19 @@ else
 		cfg="./heimdall/$$name/cfg.dot"; \
 		if [ -f "$$decompiled" ]; then \
 			echo "=== Evaluating $$name (decompiled) ==="; \
-			prompt="$$(cat prompts/DECOMPILATION_PROMPT.md)\n\nOriginal:\n$$(cat $$sol)\n\nDecompiled:\n$$(cat $$decompiled)"; \
-			ANTHROPIC_MODEL="claude-haiku-4-5" claude --dangerously-skip-permissions --model claude-haiku-4-5 -p "$$prompt" | sed 's/^```json//; s/^```//; s/```$$//' | jq . > "./heimdall/$$name/eval.json"; \
-			echo "Output written to ./heimdall/$$name/eval.json"; \
+			outfile="./heimdall/$$name/eval.json"; \
+			prompt="$$(cat prompts/DECOMPILATION_PROMPT.md)\n\n<output_file>$$outfile</output_file>\n\n<original>\n$$(cat $$sol)\n</original>\n\n<decompiled>\n$$(cat $$decompiled)\n</decompiled>"; \
+			claude --dangerously-skip-permissions -p "$$prompt"; \
+			echo "Output written to $$outfile"; \
 		else \
 			echo "Skipping $$name: no decompiled output found"; \
 		fi; \
 		if [ -f "$$cfg" ]; then \
 			echo "=== Evaluating $$name (CFG) ==="; \
-			prompt="$$(cat prompts/CFG_PROMPT.md)\n\nOriginal Solidity:\n$$(cat $$sol)\n\nCFG (dot format):\n$$(cat $$cfg)"; \
-			claude --dangerously-skip-permissions -p "$$prompt" | sed 's/^```json//; s/^```//; s/```$$//' | jq . > "./heimdall/$$name/cfg_eval.json"; \
-			echo "Output written to ./heimdall/$$name/cfg_eval.json"; \
+			outfile="./heimdall/$$name/cfg_eval.json"; \
+			prompt="$$(cat prompts/CFG_PROMPT.md)\n\n<output_file>$$outfile</output_file>\n\n<original_solidity>\n$$(cat $$sol)\n</original_solidity>\n\n<cfg format=\"dot\">\n$$(cat $$cfg)\n</cfg>"; \
+			claude --dangerously-skip-permissions -p "$$prompt"; \
+			echo "Output written to $$outfile"; \
 		else \
 			echo "Skipping $$name CFG: no cfg.dot found"; \
 		fi; \
