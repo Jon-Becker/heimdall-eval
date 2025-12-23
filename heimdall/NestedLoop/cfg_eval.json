@@ -1,24 +1,22 @@
 {
-  "score": 72,
-  "summary": "CFG captures the nested loop structure but is missing the back edges for both loop iterations and has incomplete inner loop exit path representation",
+  "score": 85,
+  "summary": "CFG accurately represents the nested loop control flow structure with both outer and inner loop paths, including initialization, condition checks, body execution, and increment operations. Minor discrepancies exist in edge representation.",
   "missing_paths": [
-    "Back edge from inner loop body (node 9) to inner loop condition check (node 8) for j++",
-    "Back edge from inner loop exit to outer loop increment and condition check (node 7) for i++",
-    "Direct path from node 8 to node 11 when inner loop condition (j < loops) is false"
+    "Explicit edge from node 2 to node 17 (fallthrough to invalid selector revert)",
+    "Edge from node 12 back to inner loop condition (node 8) is implicit rather than explicit"
   ],
   "extra_paths": [
-    "Node 9 -> Node 10 appears as unconditional but should be conditional on overflow check",
-    "Node 2 -> Node 3 should show fallthrough case when calldatasize >= 4"
+    "Node 11 contains duplicated inner loop back-edge to 0x84 which creates redundant path representation"
   ],
   "observations": [
-    "The outer loop initialization (i=0) and condition check (i < loops) are correctly represented at node 7 (0x77-0x7f)",
-    "The inner loop initialization (j=0) at node 8 (0x80-0x8c) is correct",
-    "The inner loop body with number += 1 and overflow check is at node 9",
-    "Node 10 represents the arithmetic overflow panic (0x4e487b71 selector with error code 0x11)",
-    "Node 11 represents loop exit and function return via STOP",
-    "Missing explicit back edges make the CFG appear acyclic when the actual control flow has two nested cycles",
-    "The overflow check path (node 9 -> 10) correctly captures Solidity 0.8+ checked arithmetic",
-    "Function selector dispatch (nodes 3, 13) correctly handles loop() and number() selectors",
-    "The CFG correctly shows the revert paths for invalid callvalue (node 1), invalid selector (node 15), and invalid calldata (node 12)"
+    "Outer loop structure correctly identified: initialization at 0x73-0x76, condition check at 0x78-0x7f, increment at 0xb3-0xbe",
+    "Inner loop structure correctly identified: initialization at 0x80-0x83, condition check at 0x85-0x8c, increment at 0xa5-0xb0",
+    "Loop back-edges present: inner loop jumps to 0x84 (node 11->8 implicit), outer loop jumps to 0x77 (node 12->7 implicit)",
+    "Overflow check for number += 1 operation present at nodes 9-10-11 (Solidity 0.8+ checked arithmetic)",
+    "Function selector dispatch correctly shows two paths: loop(uint256) at 0x0b7d796e and number() getter at 0x8381f58a",
+    "Input validation path (node 4->14) correctly handles invalid calldata length",
+    "Parameter validation path (nodes 5->6) correctly handles type validation failure",
+    "Exit condition paths correct: outer loop exit to node 13, inner loop exit to node 12",
+    "The CFG merges some sequential blocks which is a valid optimization but makes individual instruction flow less granular"
   ]
 }

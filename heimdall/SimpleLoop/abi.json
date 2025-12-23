@@ -9,7 +9,7 @@
       }
     ],
     "outputs": [],
-    "stateMutability": "view"
+    "stateMutability": "payable"
   },
   {
     "type": "function",

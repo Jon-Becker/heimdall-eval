@@ -1,22 +1,22 @@
 {
   "score": 85,
-  "summary": "CFG captures the main while loop structure with entry, loop body, and exit. The loop back-edge from the increment operation to the condition check is missing, and overflow checking path is present but missing the successful continuation after addition.",
-  "missing_paths": [
-    "Loop back-edge: After incrementing i (i = i + 1), control should return to the loop condition check (i < loops) at block 7",
-    "Successful overflow check continuation: Block 8 should have an edge to a block that stores the result and continues the loop, but this path is not shown"
+  "summary": "CFG correctly captures the while loop structure with conditional branching and back-edge. Minor discrepancies in overflow checking paths that are compiler-generated.",
+  "missing_paths": [],
+  "extra_paths": [
+    "Arithmetic overflow check path (node 9) - compiler-generated SafeMath equivalent for number + 1",
+    "Arithmetic overflow check path for i + 1 increment",
+    "Input validation revert path (node 13) for calldata size check",
+    "Type validation revert path (node 6) for uint256 parameter"
   ],
-  "extra_paths": [],
   "observations": [
-    "Block 0-2: Contract deployment with CALLVALUE check (revert if ETH sent) - correct",
-    "Block 3: Function selector dispatch for 0x0b7d796e (loop) and 0x8381f58a (number getter) - correct",
-    "Block 4-5: Parameter decoding for loop function with input validation - correct",
-    "Block 7: Loop condition check (i < loops) with branch to block 8 (loop body) or block 10 (exit) - correct structure",
-    "Block 8: Loop body performs number + 1 with SafeMath overflow check, calls helper at 0x0166",
-    "Block 9: Overflow revert path with Panic(0x11) - arithmetic overflow error - correct",
-    "Block 10: Loop exit leading to STOP - correct",
-    "Block 8 shows the addition operation but CFG is missing the back-edge to block 7 for loop continuation",
-    "The increment of i (i = i + 1) appears to be inlined in the bytecode but the graph does not show the complete cycle back to condition",
-    "Block 13: Getter function for 'number' state variable - correct implementation",
-    "Block 14: Fallback revert for invalid function selectors - correct"
+    "While loop correctly represented: node 7 contains the loop condition (i < loops) with ISZERO and conditional JUMPI",
+    "Loop body in node 8 performs SLOAD, addition, and SSTORE for number = number + 1",
+    "Back-edge from node 11 to node 7 (via PUSH2 0x77 JUMP) correctly implements loop iteration",
+    "Loop exit path from node 7 to node 12 when condition is false (i >= loops)",
+    "Nodes 9 and 10 handle overflow checking for additions - Solidity 0.8+ automatic overflow protection",
+    "Function selector dispatch correctly routes 0x0b7d796e to loop() and 0x8381f58a to number() getter",
+    "Node 16 handles fallback case when no function selector matches",
+    "Node 1 handles non-payable check (reverts if value sent)",
+    "The CFG is more complex than source due to compiler-generated safety checks and ABI encoding/decoding"
   ]
 }

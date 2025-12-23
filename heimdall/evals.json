@@ -1,14 +1,14 @@
 {
   "SimpleLoop": {
     "cfg": 85,
-    "decompilation": 5
+    "decompilation": 95
   },
   "WhileLoop": {
     "cfg": 85,
-    "decompilation": 5
+    "decompilation": 95
   },
   "NestedLoop": {
-    "cfg": 72,
-    "decompilation": 5
+    "cfg": 85,
+    "decompilation": 95
   }
 }
