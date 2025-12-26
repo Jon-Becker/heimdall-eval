@@ -1,4 +1,4 @@
-.PHONY: run run-all eval eval-all
+.PHONY: run run-all eval eval-all add
 
 # Support both `make run <target>` and `make run TARGET=<target>`
 TARGET := $(if $(TARGET),$(TARGET),$(word 2,$(MAKECMDGOALS)))
@@ -25,6 +25,20 @@ endif
 
 eval-all:
 	@./scripts/eval.sh --all
+
+add:
+ifeq ($(TARGET),)
+	@echo "Usage: make add <eval-name>"
+	@exit 1
+else
+	@mkdir -p evals/$(TARGET)
+	@cd evals/$(TARGET) && forge init --no-git
+	@rm -rf evals/$(TARGET)/.git
+	@rm -rf evals/$(TARGET)/script
+	@rm -rf evals/$(TARGET)/test
+	@rm -rf evals/$(TARGET)/src/Counter.sol
+	@echo "Created new eval: evals/$(TARGET)"
+endif
 
 # Catch-all to prevent "Nothing to be done" for target arguments
 %:
