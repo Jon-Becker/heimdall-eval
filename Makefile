@@ -1,83 +1,44 @@
-.PHONY: run run-all eval eval-all
+.PHONY: run run-all eval eval-all add
 
 # Support both `make run <target>` and `make run TARGET=<target>`
 TARGET := $(if $(TARGET),$(TARGET),$(word 2,$(MAKECMDGOALS)))
 
-# Use dev build if DEV=1 is passed (e.g., make eval-all DEV=1)
-HEIMDALL := $(if $(DEV),/Users/jonathanbecker/Documents/github/heimdall-rs/target/release/heimdall,heimdall)
+# Export DEV for scripts
+export DEV
 
 run:
 ifeq ($(TARGET),)
-	@echo "Available targets:"
-	@ls -d evals/*/ 2>/dev/null | xargs -n1 basename || echo "  (none found)"
-	@echo ""
-	@echo "Usage: make run <target>"
+	@./scripts/run.sh
 else
-	cd ./evals/$(TARGET) && forge build
-	@for json in ./evals/$(TARGET)/out/*/*.json; do \
-		name=$$(basename "$$json" .json); \
-		bytecode=$$(jq -r '.deployedBytecode.object // .deployedBytecode // empty' "$$json" 2>/dev/null); \
-		if [ -n "$$bytecode" ] && [ "$$bytecode" != "null" ] && [ "$$bytecode" != "0x" ]; then \
-			echo "Processing $$name..."; \
-			$(HEIMDALL) decompile "$$bytecode" -d -vvv -o ./heimdall/$$name --include-sol || true; \
-			$(HEIMDALL) cfg "$$bytecode" -d -vvv -o ./heimdall/$$name || true; \
-		fi; \
-	done
+	@./scripts/run.sh $(TARGET)
 endif
 
 run-all:
-	@for dir in $$(ls -d evals/*/ 2>/dev/null | xargs -n1 basename); do \
-		echo "=== Running $$dir ==="; \
-		$(MAKE) run TARGET=$$dir DEV=$(DEV); \
-	done
+	@./scripts/run.sh --all
 
 eval:
 ifeq ($(TARGET),)
-	@echo "Usage: make eval <target>"
+	@./scripts/eval.sh
 else
-	$(MAKE) run TARGET=$(TARGET) DEV=$(DEV)
-	@for sol in ./evals/$(TARGET)/src/*.sol; do \
-		name=$$(basename "$$sol" .sol); \
-		decompiled="./heimdall/$$name/decompiled.sol"; \
-		cfg="./heimdall/$$name/cfg.dot"; \
-		if [ -f "$$decompiled" ]; then \
-			echo "=== Evaluating $$name (decompiled) ==="; \
-			outfile="./heimdall/$$name/eval.json"; \
-			prompt="$$(cat prompts/DECOMPILATION_PROMPT.md)\n\n<output_file>$$outfile</output_file>\n\n<original>\n$$(cat $$sol)\n</original>\n\n<decompiled>\n$$(cat $$decompiled)\n</decompiled>"; \
-			claude --dangerously-skip-permissions -p "$$prompt"; \
-			echo "Output written to $$outfile"; \
-		else \
-			echo "Skipping $$name: no decompiled output found"; \
-		fi; \
-		if [ -f "$$cfg" ]; then \
-			echo "=== Evaluating $$name (CFG) ==="; \
-			outfile="./heimdall/$$name/cfg_eval.json"; \
-			prompt="$$(cat prompts/CFG_PROMPT.md)\n\n<output_file>$$outfile</output_file>\n\n<original_solidity>\n$$(cat $$sol)\n</original_solidity>\n\n<cfg format=\"dot\">\n$$(cat $$cfg)\n</cfg>"; \
-			claude --dangerously-skip-permissions -p "$$prompt"; \
-			echo "Output written to $$outfile"; \
-		else \
-			echo "Skipping $$name CFG: no cfg.dot found"; \
-		fi; \
-		decompilation_score=$$(jq -r '.score // empty' "./heimdall/$$name/eval.json" 2>/dev/null); \
-		cfg_score=$$(jq -r '.score // empty' "./heimdall/$$name/cfg_eval.json" 2>/dev/null); \
-		if [ -n "$$decompilation_score" ] || [ -n "$$cfg_score" ]; then \
-			cfg_val=$${cfg_score:-null}; \
-			dec_val=$${decompilation_score:-null}; \
-			if [ -f "./heimdall/evals.json" ]; then \
-				jq --arg name "$$name" --argjson cfg "$$cfg_val" --argjson dec "$$dec_val" \
-					'. + {($$name): {cfg: $$cfg, decompilation: $$dec}}' \
-					"./heimdall/evals.json" > "./heimdall/evals.json.tmp" && mv "./heimdall/evals.json.tmp" "./heimdall/evals.json"; \
-			else \
-				jq -n --arg name "$$name" --argjson cfg "$$cfg_val" --argjson dec "$$dec_val" \
-					'{($$name): {cfg: $$cfg, decompilation: $$dec}}' > "./heimdall/evals.json"; \
-			fi; \
-		fi; \
-	done
-	@echo "Updated ./heimdall/evals.json"
+	@./scripts/eval.sh $(TARGET)
 endif
 
 eval-all:
-	@ls -d evals/*/ 2>/dev/null | xargs -n1 basename | xargs -P 0 -I {} $(MAKE) eval TARGET={} DEV=$(DEV)
+	@./scripts/eval.sh --all
+
+add:
+ifeq ($(TARGET),)
+	@echo "Usage: make add <eval-name>"
+	@exit 1
+else
+	@mkdir -p evals/$(TARGET)
+	@cd evals/$(TARGET) && forge init --no-git
+	@rm -rf evals/$(TARGET)/.git
+	@rm -rf evals/$(TARGET)/script
+	@rm -rf evals/$(TARGET)/test
+	@rm -rf evals/$(TARGET)/src/Counter.sol
+	@echo "Created new eval: evals/$(TARGET)"
+endif
 
 # Catch-all to prevent "Nothing to be done" for target arguments
 %:

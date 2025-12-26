@@ -17,15 +17,15 @@ The evaluation framework assesses:
 ```
 heimdall-eval/
 ├── evals/           # Solidity test cases (Foundry projects)
-│   ├── nested-loop/
-│   ├── simple-loop/
-│   ├── weth9/
-│   └── while-loop/
+│   ├── loops/       # Can contain multiple contracts
+│   ├── nested-mappings/
+│   └── weth9/
 ├── heimdall/        # Decompiled outputs and evaluation results
+│   ├── <Contract>/  # Output per contract
+│   └── evals.json   # Aggregated scores
 ├── prompts/         # LLM evaluation prompts
-│   ├── CFG_PROMPT.md
-│   └── DECOMPILATION_PROMPT.md
-└── Makefile         # Build and evaluation commands
+├── scripts/         # Build and evaluation scripts
+└── Makefile
 ```
 
 ## Usage
@@ -68,18 +68,20 @@ make eval-all DEV=1
 Evaluation scores are written to `heimdall/evals.json`:
 ```json
 {
-  "SimpleLoop": { "cfg": 85, "decompilation": 25 },
-  "WhileLoop": { "cfg": 75, "decompilation": 25 },
-  "NestedLoop": { "cfg": 50, "decompilation": 25 },
-  "WETH9": { "cfg": 100, "decompilation": 45 }
+  "SimpleLoop": { "cfg": 100, "decompilation": 25 },
+  "NestedLoop": { "cfg": 100, "decompilation": 25 },
+  "WhileLoop": { "cfg": 100, "decompilation": 25 },
+  "WETH9": { "cfg": 100, "decompilation": 65 }
 }
 ```
 
 ## Adding Test Cases
 
 1. Create a new Foundry project in `evals/<name>/`
-2. Add Solidity source files to `evals/<name>/src/`
+2. Add Solidity source files to `evals/<name>/src/` (supports multiple contracts per eval)
 3. Run `make eval <name>` to generate and evaluate decompiled output
+
+Each eval can contain multiple contracts. For example, the `loops` eval contains `SimpleLoop.sol`, `NestedLoop.sol`, and `WhileLoop.sol`, which are all evaluated together.
 
 ## Contributing
 
