@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 EVALS_FILE="$ROOT_DIR/heimdall/evals.json"
 LOCK_DIR="$ROOT_DIR/heimdall/.evals.lock"
+PYTHON="${PYTHON:-python3}"
 
 usage() {
     echo "Usage: $0 <target>"
@@ -41,9 +42,19 @@ update_evals_json() {
     trap - EXIT
 }
 
+run_judge() {
+    "$PYTHON" "$SCRIPT_DIR/judge.py" \
+        --kind "$1" \
+        --prompts-dir "$ROOT_DIR/prompts" \
+        --source "$2" \
+        --artifact "$3" \
+        --output "$4"
+}
+
 eval_contract() {
     local sol="$1"
     local output_dir="$2"
+    local failed=0
 
     local name
     name=$(basename "$sol" .sol)
@@ -54,20 +65,12 @@ eval_contract() {
     if [[ -f "$decompiled" ]]; then
         echo "=== Evaluating $name (decompilation) ==="
         local outfile="$output_dir/$name/eval.json"
-        local prompt
-        prompt="$(cat "$ROOT_DIR/prompts/DECOMPILATION_PROMPT.md")
-
-<output_file>$outfile</output_file>
-
-<original>
-$(cat "$sol")
-</original>
-
-<decompiled>
-$(cat "$decompiled")
-</decompiled>"
-        claude --dangerously-skip-permissions -p "$prompt"
-        echo "Output written to $outfile"
+        if run_judge decompilation "$sol" "$decompiled" "$outfile"; then
+            echo "Output written to $outfile"
+        else
+            echo "Failed to evaluate $name (decompilation)"
+            failed=1
+        fi
     else
         echo "Skipping $name: no decompiled output found"
     fi
@@ -76,20 +79,12 @@ $(cat "$decompiled")
     if [[ -f "$cfg" ]]; then
         echo "=== Evaluating $name (CFG) ==="
         local outfile="$output_dir/$name/cfg_eval.json"
-        local prompt
-        prompt="$(cat "$ROOT_DIR/prompts/CFG_PROMPT.md")
-
-<output_file>$outfile</output_file>
-
-<original_solidity>
-$(cat "$sol")
-</original_solidity>
-
-<cfg format=\"dot\">
-$(cat "$cfg")
-</cfg>"
-        claude --dangerously-skip-permissions -p "$prompt"
-        echo "Output written to $outfile"
+        if run_judge cfg "$sol" "$cfg" "$outfile"; then
+            echo "Output written to $outfile"
+        else
+            echo "Failed to evaluate $name (CFG)"
+            failed=1
+        fi
     else
         echo "Skipping $name CFG: no cfg.dot found"
     fi
@@ -104,6 +99,7 @@ $(cat "$cfg")
     fi
 
     echo "=== Done: $name ==="
+    return "$failed"
 }
 
 eval_target() {
@@ -130,13 +126,17 @@ eval_target() {
     done
 
     # Wait for all background jobs
+    local failed=0
     for pid in "${pids[@]}"; do
-        wait "$pid" || true
+        if ! wait "$pid"; then
+            failed=1
+        fi
     done
 
     echo ""
     echo "=== Done: $target ==="
     echo "Updated $EVALS_FILE"
+    return "$failed"
 }
 
 eval_all() {
@@ -148,16 +148,25 @@ eval_all() {
         pids+=($!)
     done
 
+    local failed=0
     for pid in "${pids[@]}"; do
-        wait "$pid" || true
+        if ! wait "$pid"; then
+            failed=1
+        fi
     done
     echo "=== All evaluations complete ==="
+    return "$failed"
 }
 
 # Main
 if [[ $# -eq 0 ]]; then
     usage
-elif [[ "$1" == "--all" ]]; then
+fi
+
+# Fail fast before any expensive decompilation work
+"$PYTHON" "$SCRIPT_DIR/judge.py" --check-env
+
+if [[ "$1" == "--all" ]]; then
     eval_all
 else
     eval_target "$1"

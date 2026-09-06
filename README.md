@@ -2,11 +2,11 @@
 
 ![splash preview](./preview.png?raw=true)
 
-Structured evaluation framework for [heimdall-rs](https://github.com/jon-becker/heimdall-rs)'s decompilation and CFG generation using Claude as an LLM judge.
+Structured evaluation framework for [heimdall-rs](https://github.com/jon-becker/heimdall-rs)'s decompilation and CFG generation using an LLM judge via [OpenRouter](https://openrouter.ai).
 
 ## Overview
 
-heimdall-eval provides a structured approach to evaluating and benchmarking Heimdall's decompilation accuracy and CFG generation quality. It uses Claude as an LLM judge to compare decompiled output against original Solidity source code, scoring based on logical preservation rather than syntactic similarity.
+heimdall-eval provides a structured approach to evaluating and benchmarking Heimdall's decompilation accuracy and CFG generation quality. It uses an LLM judge to compare decompiled output against original Solidity source code, scoring based on logical preservation rather than syntactic similarity.
 
 The evaluation framework assesses:
 - Decompilation accuracy (arithmetic, control flow, storage operations, external calls)
@@ -28,7 +28,7 @@ heimdall-eval/
 │   ├── <Contract>/  # Output per contract
 │   └── evals.json   # Aggregated scores
 ├── prompts/         # LLM evaluation prompts
-├── scripts/         # Build and evaluation scripts
+├── scripts/         # Build and evaluation scripts (incl. the OpenRouter judge)
 └── Makefile
 ```
 
@@ -38,7 +38,29 @@ heimdall-eval/
 
 - [Heimdall](https://github.com/jon-becker/heimdall-rs) installed and available in PATH
 - [Foundry](https://getfoundry.sh/) for compiling Solidity test cases
-- [Claude Code](https://github.com/anthropics/claude-code) CLI for running evaluations
+- `jq` for aggregating scores
+- Python 3.9+ (standard library only, no third-party packages required)
+- An [OpenRouter](https://openrouter.ai) API key exported as `OPENROUTER_API_KEY`
+
+### Configuration
+
+The judge is configured entirely through environment variables:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OPENROUTER_API_KEY` | _(required)_ | OpenRouter API key. Read from the environment only; it is never written to disk or logged. |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | Base URL of the OpenAI-compatible API. |
+| `EVAL_MODEL` | `gpt-5.6-luna` | OpenRouter model slug used as the judge. |
+| `EVAL_TEMPERATURE` | `0` | Sampling temperature, sent to OpenRouter as a numeric JSON value. Whether it is honored is provider and model dependent; some models ignore or clamp it. |
+| `EVAL_TIMEOUT` | `300` | Per-request timeout, in seconds. |
+| `EVAL_MAX_RETRIES` | `3` | Retries for transient failures only (HTTP 408, 409, 429, 5xx, and network errors). |
+| `EVAL_RETRY_BACKOFF` | `2` | Base backoff in seconds; doubles on each retry. |
+| `PYTHON` | `python3` | Python interpreter used to run the judge. |
+
+```bash
+export OPENROUTER_API_KEY=...
+make eval-all
+```
 
 ### Commands
 
@@ -66,6 +88,22 @@ Use a development build of Heimdall:
 ```bash
 make eval-all DEV=1
 ```
+
+Run the judge's unit tests (offline, no credentials required):
+```bash
+make test
+```
+
+Run the judge's end-to-end test against the real OpenRouter API:
+```bash
+export OPENROUTER_API_KEY=...
+make test-e2e
+```
+
+`make test-e2e` is not part of the offline unit suite. It requires `OPENROUTER_API_KEY` in the
+environment, fails clearly if the key is missing, and bills one real provider request. In CI it
+runs as a separate job that is skipped on fork pull requests, where repository secrets are
+unavailable.
 
 ### Results
 

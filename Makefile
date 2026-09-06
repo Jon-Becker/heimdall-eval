@@ -1,4 +1,4 @@
-.PHONY: run run-all eval eval-all add report test
+.PHONY: run run-all eval eval-all add report test test-e2e
 
 # Support both `make run <target>` and `make run TARGET=<target>`
 TARGET := $(if $(TARGET),$(TARGET),$(word 2,$(MAKECMDGOALS)))
@@ -36,6 +36,10 @@ report:
 
 test:
 	@python3 -m unittest discover -s scripts -p 'test_*.py'
+
+# Makes one real OpenRouter request; requires OPENROUTER_API_KEY.
+test-e2e:
+	@cd scripts && python3 -m unittest e2e_judge_test
 
 add:
 ifeq ($(TARGET),)

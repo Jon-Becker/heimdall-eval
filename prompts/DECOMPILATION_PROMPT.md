@@ -118,7 +118,8 @@ function func_94b918de(uint256 arg0) external {
 		</example>
 	</examples>
 	<output_instructions>
-		<instruction>Write the evaluation result directly to the specified output file as JSON</instruction>
+		<instruction>Respond with only the JSON object described below</instruction>
+		<instruction>Do not include any prose, explanation, or text outside the JSON object</instruction>
 		<instruction>Only list functional differences, not cosmetic changes like naming or formatting</instruction>
 		<format>
 {
