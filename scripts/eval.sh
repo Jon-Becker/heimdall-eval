@@ -54,6 +54,7 @@ run_judge() {
 eval_contract() {
     local sol="$1"
     local output_dir="$2"
+    local failed=0
 
     local name
     name=$(basename "$sol" .sol)
@@ -68,6 +69,7 @@ eval_contract() {
             echo "Output written to $outfile"
         else
             echo "Failed to evaluate $name (decompilation)"
+            failed=1
         fi
     else
         echo "Skipping $name: no decompiled output found"
@@ -81,6 +83,7 @@ eval_contract() {
             echo "Output written to $outfile"
         else
             echo "Failed to evaluate $name (CFG)"
+            failed=1
         fi
     else
         echo "Skipping $name CFG: no cfg.dot found"
@@ -96,6 +99,7 @@ eval_contract() {
     fi
 
     echo "=== Done: $name ==="
+    return "$failed"
 }
 
 eval_target() {
@@ -122,13 +126,17 @@ eval_target() {
     done
 
     # Wait for all background jobs
+    local failed=0
     for pid in "${pids[@]}"; do
-        wait "$pid" || true
+        if ! wait "$pid"; then
+            failed=1
+        fi
     done
 
     echo ""
     echo "=== Done: $target ==="
     echo "Updated $EVALS_FILE"
+    return "$failed"
 }
 
 eval_all() {
@@ -140,10 +148,14 @@ eval_all() {
         pids+=($!)
     done
 
+    local failed=0
     for pid in "${pids[@]}"; do
-        wait "$pid" || true
+        if ! wait "$pid"; then
+            failed=1
+        fi
     done
     echo "=== All evaluations complete ==="
+    return "$failed"
 }
 
 # Main

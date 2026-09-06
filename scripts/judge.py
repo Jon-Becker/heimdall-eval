@@ -5,13 +5,14 @@ import argparse
 import json
 import os
 import re
+import ssl
 import sys
 import time
 import urllib.error
 import urllib.request
 
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
-DEFAULT_MODEL = "anthropic/claude-sonnet-4.5"
+DEFAULT_MODEL = "gpt-5.6-luna"
 DEFAULT_TEMPERATURE = 0.0
 DEFAULT_TIMEOUT = 300.0
 DEFAULT_MAX_RETRIES = 3
@@ -118,6 +119,26 @@ def parse_result(content, required_keys):
     return result
 
 
+def create_ssl_context():
+    """Create a verified TLS context, loading a common system bundle if needed.
+
+    Some macOS Python installations have no configured trust store even though the
+    operating system provides one at ``/etc/ssl/cert.pem``. Never disable
+    certificate verification; use that system bundle only when the default store
+    is empty.
+    """
+    context = ssl.create_default_context()
+    if context.cert_store_stats().get("x509_ca", 0):
+        return context
+
+    for cafile in ("/etc/ssl/cert.pem", "/etc/ssl/certs/ca-certificates.crt"):
+        if os.path.isfile(cafile):
+            context.load_verify_locations(cafile=cafile)
+            if context.cert_store_stats().get("x509_ca", 0):
+                break
+    return context
+
+
 def post_chat_completion(body, api_key, base_url, timeout, max_retries, backoff):
     """POST to the chat completions endpoint, retrying only transient failures."""
     request = urllib.request.Request(
@@ -132,7 +153,9 @@ def post_chat_completion(body, api_key, base_url, timeout, max_retries, backoff)
 
     for attempt in range(max_retries + 1):
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with urllib.request.urlopen(
+                request, timeout=timeout, context=create_ssl_context()
+            ) as response:
                 return json.loads(response.read().decode())
         except urllib.error.HTTPError as exc:
             if exc.code not in RETRYABLE_STATUSES or attempt == max_retries:

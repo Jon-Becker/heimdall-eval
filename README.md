@@ -50,7 +50,7 @@ The judge is configured entirely through environment variables:
 | --- | --- | --- |
 | `OPENROUTER_API_KEY` | _(required)_ | OpenRouter API key. Read from the environment only; it is never written to disk or logged. |
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | Base URL of the OpenAI-compatible API. |
-| `EVAL_MODEL` | `anthropic/claude-sonnet-4.5` | OpenRouter model slug used as the judge. |
+| `EVAL_MODEL` | `gpt-5.6-luna` | OpenRouter model slug used as the judge. |
 | `EVAL_TEMPERATURE` | `0` | Sampling temperature, sent to OpenRouter as a numeric JSON value. Whether it is honored is provider and model dependent; some models ignore or clamp it. |
 | `EVAL_TIMEOUT` | `300` | Per-request timeout, in seconds. |
 | `EVAL_MAX_RETRIES` | `3` | Retries for transient failures only (HTTP 408, 409, 429, 5xx, and network errors). |
