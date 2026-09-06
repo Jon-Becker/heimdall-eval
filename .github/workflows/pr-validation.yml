@@ -77,8 +77,8 @@ jobs:
               core.setFailed(`PR description validation failed:\n\n${errors.join('\n')}\n\nPlease fill in all sections of the PR template.`);
             }
 
-  report-tests:
-    name: Code Quality (Report Tests)
+  tests:
+    name: Code Quality (Python Tests)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
