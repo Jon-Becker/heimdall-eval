@@ -77,9 +77,9 @@ Evaluation scores are written to `heimdall/evals.json`:
 
 ### HTML Report
 
-`scripts/report.py` renders a self-contained HTML report comparing two decompilation runs.
+`scripts/report.py` renders a small static report comparing two decompilation runs.
 It uses only the Python standard library (3.9+), embeds its own styles, and loads nothing at
-runtime, so the file can be published or attached as an artifact as-is.
+runtime, so the report can be published or attached as an artifact as-is.
 
 Each run directory is a `heimdall/` output directory:
 
@@ -89,9 +89,11 @@ Each run directory is a `heimdall/` output directory:
 <run>/<Contract>/error.txt        error text, written when the run failed
 ```
 
-Every contract found in either run is rendered as a card with its status (pass, failed, or
-missing output), the baseline and candidate LLM judgements, the before and after sources, and a
-unified diff. Unchanged contracts are kept and render an explicit "identical" diff state.
+The requested report file is a minimal index: it names the two versions being compared and
+links to each evaluation. A sibling directory named after the report file (for example,
+`report/` beside `report.html`) contains one self-contained detail page per contract. Each detail
+page includes the status, baseline and candidate LLM judgements, both sources, and a unified diff.
+Unchanged contracts are kept and render an explicit "identical" diff state.
 
 ```bash
 make report BASELINE=heimdall/baseline CANDIDATE=heimdall REPORT=heimdall/report.html
