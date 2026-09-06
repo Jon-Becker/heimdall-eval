@@ -58,7 +58,8 @@ Evaluate how completely the extracted CFG captures control flow paths from the o
 		</example>
 	</examples>
 	<output_instructions>
-		<instruction>Write the evaluation result directly to the specified output file as JSON</instruction>
+		<instruction>Respond with only the JSON object described below</instruction>
+		<instruction>Do not include any prose, explanation, or text outside the JSON object</instruction>
 		<instruction>The extra_paths field is informational only and should NOT affect the score</instruction>
 		<format>
 {
