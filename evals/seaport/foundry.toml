@@ -1,0 +1,8 @@
+[profile.default]
+src = "src"
+out = "out"
+auto_detect_solc = false
+solc_version = "0.8.14"
+optimizer = true
+optimizer_runs = 19066
+remappings = ["seaport-types/=src/seaport-types/", "seaport-sol/=src/seaport-sol/"]

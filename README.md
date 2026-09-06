@@ -19,6 +19,10 @@ heimdall-eval/
 ├── evals/           # Solidity test cases (Foundry projects)
 │   ├── loops/       # Can contain multiple contracts
 │   ├── nested-mappings/
+│   ├── seaport/         # Seaport 1.1 marketplace
+│   ├── uniswap-v2/      # Uniswap V2 USDC/WETH pair
+│   ├── uniswap-v3-swaprouter/
+│   ├── usdt/
 │   └── weth9/
 ├── heimdall/        # Decompiled outputs and evaluation results
 │   ├── <Contract>/  # Output per contract
@@ -93,7 +97,10 @@ The requested report file is a minimal index: it names the two versions being co
 links to each evaluation. A sibling directory named after the report file (for example,
 `report/` beside `report.html`) contains one self-contained detail page per contract. Each detail
 page includes the status, baseline and candidate LLM judgements, both sources, and a unified diff.
-Unchanged contracts are kept and render an explicit "identical" diff state.
+Unchanged contracts are kept and render an explicit "identical" diff state. By default, the
+report includes only contracts with an LLM result (`eval.json`) in at least one run; this avoids
+listing decompilation-only artifacts. Pass `--include-unevaluated` to `scripts/report.py` to
+include every generated artifact. When regenerating a report, obsolete detail pages are removed.
 
 ```bash
 make report BASELINE=heimdall/baseline CANDIDATE=heimdall REPORT=heimdall/report.html
@@ -121,6 +128,21 @@ make test
 3. Run `make eval <name>` to generate and evaluate decompiled output
 
 Each eval can contain multiple contracts. For example, the `loops` eval contains `SimpleLoop.sol`, `NestedLoop.sol`, and `WhileLoop.sol`, which are all evaluated together.
+
+## Mainnet Contract Evals
+
+The protocol evals use verified mainnet source and compiler settings. Their `.clone.meta`
+files record the evaluated deployment:
+
+| Eval | Contract | Mainnet address |
+| --- | --- | --- |
+| `usdt` | TetherToken (USDT) | `0xdAC17F958D2ee523a2206206994597C13D831ec7` |
+| `uniswap-v2` | UniswapV2Pair (USDC/WETH) | `0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc` |
+| `uniswap-v3-swaprouter` | SwapRouter | `0xE592427A0AEce92De3Edee1F18E0157C05861564` |
+| `seaport` | Seaport 1.1 | `0x00000000006c3852cbEf3e08E8dF289169EdE581` |
+
+`SwapRouter.sol` and `Seaport.sol` are flattened entry sources so the LLM judge receives
+the complete implementation; their imported source trees remain alongside them for Foundry.
 
 ## Contributing
 

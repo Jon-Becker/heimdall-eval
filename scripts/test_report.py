@@ -97,28 +97,33 @@ class ArtifactLoadingTest(unittest.TestCase):
         write(os.path.join(self.candidate, "Broken", "error.txt"), "panic in decompiler\n")
         write(os.path.join(self.root, "evals", "loops", "src", "Changed.sol"), "// solidity\n")
 
-    def test_cases_are_discovered_and_loaded(self):
+    def test_cases_without_llm_results_are_filtered_by_default(self):
         cases = report.build_cases(self.baseline, self.candidate, os.path.join(self.root, "evals"))
-        self.assertEqual([item.name for item in cases], ["Broken", "Changed"])
-        changed = cases[1]
+        self.assertEqual([item.name for item in cases], ["Changed"])
+        changed = cases[0]
         self.assertEqual(changed.target, "loops")
         self.assertEqual(changed.baseline.score, 25)
         self.assertEqual(changed.candidate.differences, ["one"])
-        self.assertEqual(cases[0].status, "failed")
 
-    def test_cli_writes_index_and_one_detail_page_per_case(self):
+        all_cases = report.build_cases(self.baseline, self.candidate, os.path.join(self.root, "evals"), include_unevaluated=True)
+        self.assertEqual([item.name for item in all_cases], ["Broken", "Changed"])
+        self.assertEqual(all_cases[0].status, "failed")
+
+    def test_cli_writes_only_evaluated_detail_pages_and_removes_stale_pages(self):
         output = os.path.join(self.root, "reports", "comparison.html")
+        stale_page = os.path.join(self.root, "reports", "comparison", "Broken.html")
+        write(stale_page, "stale")
         self.assertEqual(report.main(["--baseline", self.baseline, "--candidate", self.candidate, "--evals-dir", os.path.join(self.root, "evals"), "--output", output]), 0)
         with open(output, encoding="utf-8") as handle:
             index = handle.read()
         self.assertIn("Comparing baseline → candidate", index)
         self.assertIn('href="comparison/Changed.html"', index)
-        self.assertNotIn("panic in decompiler", index)
-        for name in ("Broken", "Changed"):
-            path = os.path.join(self.root, "reports", "comparison", f"{name}.html")
-            self.assertTrue(os.path.exists(path))
-            with open(path, encoding="utf-8") as handle:
-                self.assertIn(name, handle.read())
+        self.assertNotIn('href="comparison/Broken.html"', index)
+        self.assertFalse(os.path.exists(stale_page))
+        path = os.path.join(self.root, "reports", "comparison", "Changed.html")
+        self.assertTrue(os.path.exists(path))
+        with open(path, encoding="utf-8") as handle:
+            self.assertIn("Changed", handle.read())
 
 
 if __name__ == "__main__":

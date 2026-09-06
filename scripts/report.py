@@ -67,6 +67,11 @@ class Case:
     def changed(self) -> bool:
         return (self.baseline.source or "") != (self.candidate.source or "")
 
+    @property
+    def has_llm_result(self) -> bool:
+        """Whether either compared run has a recorded LLM evaluation."""
+        return self.baseline.has_comment or self.candidate.has_comment
+
 
 def read_text(path: str) -> str | None:
     try:
@@ -209,9 +214,22 @@ def render_report(cases: list[Case], title: str, baseline: str = "baseline", can
     return document(title, body)
 
 
-def build_cases(baseline_dir: str, candidate_dir: str, evals_dir: str) -> list[Case]:
+def build_cases(baseline_dir: str, candidate_dir: str, evals_dir: str, include_unevaluated: bool = False) -> list[Case]:
     targets = discover_targets(evals_dir)
-    return [Case(name, targets.get(name), load_side(baseline_dir, name), load_side(candidate_dir, name)) for name in discover_cases(baseline_dir, candidate_dir)]
+    cases = [Case(name, targets.get(name), load_side(baseline_dir, name), load_side(candidate_dir, name)) for name in discover_cases(baseline_dir, candidate_dir)]
+    return cases if include_unevaluated else [case for case in cases if case.has_llm_result]
+
+
+def clear_detail_pages(detail_dir: str) -> None:
+    """Remove detail pages from a previous report so filtered cases cannot linger."""
+    if not os.path.isdir(detail_dir):
+        return
+    for entry in os.listdir(detail_dir):
+        if entry.endswith(".html"):
+            try:
+                os.remove(os.path.join(detail_dir, entry))
+            except OSError:
+                pass
 
 
 def version_name(path: str) -> str:
@@ -225,12 +243,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", required=True, help="path of the index HTML file to write")
     parser.add_argument("--evals-dir", default="evals", help="eval sources, used to label targets")
     parser.add_argument("--title", default="Heimdall Evaluation Report", help="report title")
+    parser.add_argument("--include-unevaluated", action="store_true", help="include contracts with no LLM evaluation in either run")
     args = parser.parse_args(argv)
-    cases = build_cases(args.baseline, args.candidate, args.evals_dir)
+    cases = build_cases(args.baseline, args.candidate, args.evals_dir, args.include_unevaluated)
     output_dir = os.path.dirname(os.path.abspath(args.output))
     detail_dir_name = os.path.splitext(os.path.basename(args.output))[0]
     detail_dir = os.path.join(output_dir, detail_dir_name)
     os.makedirs(detail_dir, exist_ok=True)
+    clear_detail_pages(detail_dir)
     with open(args.output, "w", encoding="utf-8") as handle:
         handle.write(render_report(cases, args.title, version_name(args.baseline), version_name(args.candidate), detail_dir_name))
     for item in cases:
