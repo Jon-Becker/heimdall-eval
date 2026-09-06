@@ -89,10 +89,21 @@ Use a development build of Heimdall:
 make eval-all DEV=1
 ```
 
-Run the judge's unit tests:
+Run the judge's unit tests (offline, no credentials required):
 ```bash
 make test
 ```
+
+Run the judge's end-to-end test against the real OpenRouter API:
+```bash
+export OPENROUTER_API_KEY=...
+make test-e2e
+```
+
+`make test-e2e` is not part of the offline unit suite. It requires `OPENROUTER_API_KEY` in the
+environment, fails clearly if the key is missing, and bills one real provider request. In CI it
+runs as a separate job that is skipped on fork pull requests, where repository secrets are
+unavailable.
 
 ### Results
 
