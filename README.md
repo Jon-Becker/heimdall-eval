@@ -75,6 +75,43 @@ Evaluation scores are written to `heimdall/evals.json`:
 }
 ```
 
+### HTML Report
+
+`scripts/report.py` renders a self-contained HTML report comparing two decompilation runs.
+It uses only the Python standard library (3.9+), embeds its own styles, and loads nothing at
+runtime, so the file can be published or attached as an artifact as-is.
+
+Each run directory is a `heimdall/` output directory:
+
+```
+<run>/<Contract>/decompiled.sol   decompiled source (absent if heimdall produced none)
+<run>/<Contract>/eval.json        judge result: { "score", "summary", "differences" }
+<run>/<Contract>/error.txt        error text, written when the run failed
+```
+
+Every contract found in either run is rendered as a card with its status (pass, failed, or
+missing output), the baseline and candidate LLM judgements, the before and after sources, and a
+unified diff. Unchanged contracts are kept and render an explicit "identical" diff state.
+
+```bash
+make report BASELINE=heimdall/baseline CANDIDATE=heimdall REPORT=heimdall/report.html
+```
+
+Or directly:
+
+```bash
+python3 scripts/report.py \
+  --baseline heimdall/baseline \
+  --candidate heimdall \
+  --output heimdall/report.html
+```
+
+Run the report unit tests with:
+
+```bash
+make test
+```
+
 ## Adding Test Cases
 
 1. Create a new Foundry project in `evals/<name>/`
